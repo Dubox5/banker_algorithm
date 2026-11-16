@@ -1,0 +1,161 @@
+Evidencias - algoritmo do banqueiro (ebs2)
+testado no Ubuntu 24.04 pelo WSL, gcc 13.3
+
+== 1. exemplo do enunciado
+$ ./banker 10 5 7
+(saiu com 0, result.txt:)
+Allocate to customer 0 the resources 0 2 1
+Allocate to customer 2 the resources 3 0 2
+Allocate to customer 1 the resources 2 0 0
+Allocate to customer 4 the resources 0 0 2
+Release from customer 0 the resources 0 1 1
+Allocate to customer 3 the resources 2 1 1
+MAXIMUM | ALLOCATION | NEED
+7 5 3 | 0 1 0 | 7 4 3
+3 2 2 | 2 0 0 | 1 2 2
+9 0 2 | 3 0 2 | 6 0 0
+2 2 2 | 2 1 1 | 0 1 1
+4 3 3 | 0 0 2 | 4 3 1
+AVAILABLE 3 3 2
+The resources 3 3 2 are not enough to customer 4 request 4 0 0
+Allocate to customer 1 the resources 1 0 2
+The customer 0 request 0 2 0 was denied because result in an unsafe state
+The customer 2 request 0 1 0 was denied because exceed its maximum allocation
+(igual ao resultado do enunciado)
+
+-- erros nos argumentos --
+
+== 2. sem argumento
+$ ./banker
+Erro: uso: ./banker <instancias de cada recurso>, ex: ./banker 10 5 7
+(saiu com 1, nao criou result.txt)
+
+== 3. argumento a menos
+$ ./banker 10 5
+Erro: quantidade de recursos no customer.txt nao bate com a quantidade de argumentos (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 4. argumento a mais
+$ ./banker 10 5 7 3
+Erro: quantidade de recursos no customer.txt nao bate com a quantidade de argumentos (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 5. argumento com letra
+$ ./banker 10 abc 7
+Erro: argumento 'abc' invalido, tem que ser um inteiro >= 0
+(saiu com 1, nao criou result.txt)
+
+== 6. argumento negativo
+$ ./banker 10 -5 7
+Erro: argumento '-5' invalido, tem que ser um inteiro >= 0
+(saiu com 1, nao criou result.txt)
+
+-- arquivos --
+
+== 7. sem customer.txt
+$ ./banker 10 5 7
+Erro: nao consegui abrir o customer.txt
+(saiu com 1, nao criou result.txt)
+
+== 8. sem commands.txt
+$ ./banker 10 5 7
+Erro: nao consegui abrir o commands.txt
+(saiu com 1, nao criou result.txt)
+
+-- customer.txt errado --
+
+== 9. customer.txt vazio
+$ ./banker 10 5 7
+Erro: customer.txt esta vazio
+(saiu com 1, nao criou result.txt)
+
+== 10. cliente com 2 recursos (7,5,3 / 3,2)
+$ ./banker 10 5 7
+Erro: quantidade de recursos no customer.txt nao bate com a quantidade de argumentos (linha 2)
+(saiu com 1, nao criou result.txt)
+
+== 11. letra no lugar de numero (7,5,a)
+$ ./banker 10 5 7
+Erro: formato invalido no customer.txt, era pra ser so numeros separados por virgula (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 12. campo vazio (7,,3)
+$ ./banker 10 5 7
+Erro: formato invalido no customer.txt, tem campo vazio (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 13. sem virgula (7 5 3)
+$ ./banker 10 5 7
+Erro: quantidade de recursos no customer.txt nao bate com a quantidade de argumentos (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 14. linha vazia no meio
+$ ./banker 10 5 7
+Erro: customer.txt tem linha vazia no meio dos clientes (linha 2)
+(saiu com 1, nao criou result.txt)
+
+-- commands.txt errado --
+
+== 15. comando com 2 recursos (RQ 0 1 1)
+$ ./banker 10 5 7
+Erro: quantidade de recursos no commands.txt nao bate com a quantidade de argumentos (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 16. comando que nao existe (XX 0 1 1 1)
+$ ./banker 10 5 7
+Erro: comando desconhecido no commands.txt (so vale RQ, RL ou *) (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 17. cliente que nao existe (RQ 9 1 1 1)
+$ ./banker 10 5 7
+Erro: cliente do commands.txt nao existe no customer.txt (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 18. RQ sozinho
+$ ./banker 10 5 7
+Erro: numero do cliente invalido no commands.txt (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 19. letra no recurso (RQ 0 1 x 1)
+$ ./banker 10 5 7
+Erro: recurso invalido no commands.txt, tem que ser inteiro >= 0 (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 20. * com coisa depois (* 1)
+$ ./banker 10 5 7
+Erro: no commands.txt o * tem que ficar sozinho na linha (linha 1)
+(saiu com 1, nao criou result.txt)
+
+== 21. erro so na linha 2 (a linha 1 nao chega a rodar)
+$ ./banker 10 5 7
+Erro: comando desconhecido no commands.txt (so vale RQ, RL ou *) (linha 2)
+(saiu com 1, nao criou result.txt)
+
+-- outros casos que tem que funcionar --
+
+== 22. liberar mais do que o cliente tem (RL 0 1 1 1)
+$ ./banker 10 5 7
+(saiu com 0, result.txt:)
+The customer 0 release 1 1 1 was denied because exceed its allocation
+MAXIMUM | ALLOCATION | NEED
+7 5 3 | 0 0 0 | 7 5 3
+3 2 2 | 0 0 0 | 3 2 2
+9 0 2 | 0 0 0 | 9 0 2
+2 2 2 | 0 0 0 | 2 2 2
+4 3 3 | 0 0 0 | 4 3 3
+AVAILABLE 10 5 7
+
+== 23. so 2 recursos e 2 clientes
+$ ./banker 6 6
+(saiu com 0, result.txt:)
+Allocate to customer 0 the resources 2 2
+Allocate to customer 1 the resources 1 1
+MAXIMUM | ALLOCATION | NEED
+5 5 | 2 2 | 3 3
+3 3 | 1 1 | 2 2
+AVAILABLE 3 3
+Release from customer 0 the resources 2 2
+MAXIMUM | ALLOCATION | NEED
+5 5 | 0 0 | 5 5
+3 3 | 1 1 | 2 2
+AVAILABLE 5 5
