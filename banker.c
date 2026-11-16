@@ -186,9 +186,127 @@ void le_comandos() {
 }
 
 
+int estado_seguro() {
+    int *work = malloc(num_recursos * sizeof(int));
+    int *terminou = calloc(num_clientes, sizeof(int));
+    for (int j = 0; j < num_recursos; j++) work[j] = disponivel[j];
+
+    int cont = 0;
+    int achou = 1;
+    while (achou) {
+        achou = 0;
+        for (int i = 0; i < num_clientes; i++) {
+            if (terminou[i]) continue;
+
+            int da = 1;
+            for (int j = 0; j < num_recursos; j++) {
+                if (necessidade[i][j] > work[j]) { da = 0; break; }
+            }
+            if (da) {
+                for (int j = 0; j < num_recursos; j++) work[j] += alocado[i][j];
+                terminou[i] = 1;
+                cont++;
+                achou = 1;
+            }
+        }
+    }
+    free(work);
+    free(terminou);
+    return cont == num_clientes;
+}
+
+void pedido(FILE *out, int c, int *req) {
+    for (int j = 0; j < num_recursos; j++) {
+        if (req[j] > necessidade[c][j]) {
+            fprintf(out, "The customer %d request ", c);
+            imprime_vetor(out, req);
+            fprintf(out, " was denied because exceed its maximum allocation\n");
+            return;
+        }
+    }
+    for (int j = 0; j < num_recursos; j++) {
+        if (req[j] > disponivel[j]) {
+            fprintf(out, "The resources ");
+            imprime_vetor(out, disponivel);
+            fprintf(out, " are not enough to customer %d request ", c);
+            imprime_vetor(out, req);
+            fprintf(out, "\n");
+            return;
+        }
+    }
+    for (int j = 0; j < num_recursos; j++) {
+        disponivel[j] -= req[j];
+        alocado[c][j] += req[j];
+        necessidade[c][j] -= req[j];
+    }
+    if (estado_seguro()) {
+        fprintf(out, "Allocate to customer %d the resources ", c);
+        imprime_vetor(out, req);
+        fprintf(out, "\n");
+    } else {
+        for (int j = 0; j < num_recursos; j++) {
+            disponivel[j] += req[j];
+            alocado[c][j] -= req[j];
+            necessidade[c][j] += req[j];
+        }
+        fprintf(out, "The customer %d request ", c);
+        imprime_vetor(out, req);
+        fprintf(out, " was denied because result in an unsafe state\n");
+    }
+}
+
+void libera(FILE *out, int c, int *rel) {
+    for (int j = 0; j < num_recursos; j++) {
+        if (rel[j] > alocado[c][j]) {
+            fprintf(out, "The customer %d release ", c);
+            imprime_vetor(out, rel);
+            fprintf(out, " was denied because exceed its allocation\n");
+            return;
+        }
+    }
+    for (int j = 0; j < num_recursos; j++) {
+        disponivel[j] += rel[j];
+        alocado[c][j] -= rel[j];
+        necessidade[c][j] += rel[j];
+    }
+    fprintf(out, "Release from customer %d the resources ", c);
+    imprime_vetor(out, rel);
+    fprintf(out, "\n");
+}
+
+void imprime_estado(FILE *out) {
+    fprintf(out, "MAXIMUM | ALLOCATION | NEED\n");
+    for (int i = 0; i < num_clientes; i++) {
+        imprime_vetor(out, maximo[i]);
+        fprintf(out, " | ");
+        imprime_vetor(out, alocado[i]);
+        fprintf(out, " | ");
+        imprime_vetor(out, necessidade[i]);
+        fprintf(out, "\n");
+    }
+    fprintf(out, "AVAILABLE ");
+    imprime_vetor(out, disponivel);
+    fprintf(out, "\n");
+}
+
+
 int main(int argc, char *argv[]) {
     le_argumentos(argc, argv);
     le_clientes();
     le_comandos();
+
+    FILE *out = fopen("result.txt", "w");
+    if (out == NULL) erro("nao consegui criar o result.txt", 0);
+
+    for (int k = 0; k < num_comandos; k++) {
+        if (comandos[k].tipo == 'Q')
+            pedido(out, comandos[k].cliente, comandos[k].valores);
+        else if (comandos[k].tipo == 'L')
+            libera(out, comandos[k].cliente, comandos[k].valores);
+        else
+            imprime_estado(out);
+    }
+
+    fclose(out);
     return 0;
 }
